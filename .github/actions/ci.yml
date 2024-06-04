@@ -1,0 +1,77 @@
+name: CI/codecov
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - master
+  pull_request:
+    types: [ opened, synchronize, reopened ]
+  release:
+    types: [ published ]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+permissions: # Permissions for GitHub pages
+  contents: read
+  pages: write
+  id-token: write
+
+env:
+  CARGO_TERM_COLOR: always
+  RUST_VERSION: 1.75.0
+  NIGHTLY_RUST_VERSION: nightly-2023-10-29
+  RUSTFLAGS: -D warnings
+  SEGMENT_DOWNLOAD_TIMEOUT_MINS: 2
+
+jobs:
+  rustfmt:
+    steps:
+      - uses: actions/checkout@v3
+      - name: Install latest nightly Rust
+        uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: ${{ env.NIGHTLY_RUST_VERSION }}
+          components: rustfmt
+
+      - name: Rustfmt check
+        run: cargo +${{ env.NIGHTLY_RUST_VERSION }} fmt --all -- --check
+
+  cargo-verfications:
+    needs:
+      - rustfmt
+    env:
+      RUSTFLAGS: -D warnings
+    steps:
+      - uses: actions/checkout@v3
+      - name: Install latest Rust
+        uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: ${{ env.RUST_VERSION }}
+          components: rustfmt
+      - name: Install cargo-llvm-codecov
+        uses: taiki-e/install-action@cargo-llvm-cov
+
+      - name: Clippy check
+        working-directory: ./example
+        run: cargo clippy --all-targets --all-features
+
+      - name: Cargo test
+        working-directory: ./example
+        run: cargo test --all-targets --all-features
+
+      - name: Code coverage report
+        working-directory: ./example
+
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v2
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v1
+        with:
+          path: 'example/target/llvm-cov/html/'
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v1
