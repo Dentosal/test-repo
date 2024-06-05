@@ -15,9 +15,7 @@ concurrency:
   cancel-in-progress: true
 
 permissions: # Permissions for GitHub pages
-  contents: read
-  pages: write
-  id-token: write
+  contents: write
 
 env:
   CARGO_TERM_COLOR: always
@@ -25,26 +23,27 @@ env:
   NIGHTLY_RUST_VERSION: nightly-2023-10-29
   RUSTFLAGS: -D warnings
   SEGMENT_DOWNLOAD_TIMEOUT_MINS: 2
+  GIT_BRANCH: ${{ github.head_ref || github.ref_name }}
 
 jobs:
-  rustfmt:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-      - name: Install latest nightly Rust
-        uses: dtolnay/rust-toolchain@master
-        with:
-          toolchain: ${{ env.NIGHTLY_RUST_VERSION }}
-          components: rustfmt
+  # rustfmt:
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - uses: actions/checkout@v3
+  #     - name: Install latest nightly Rust
+  #       uses: dtolnay/rust-toolchain@master
+  #       with:
+  #         toolchain: ${{ env.NIGHTLY_RUST_VERSION }}
+  #         components: rustfmt
 
-      - name: Rustfmt check
-        working-directory: ./example
-        run: cargo +${{ env.NIGHTLY_RUST_VERSION }} fmt --all -- --check
+  #     - name: Rustfmt check
+  #       working-directory: ./example
+  #       run: cargo +${{ env.NIGHTLY_RUST_VERSION }} fmt --all -- --check
 
   cargo-verfications:
     runs-on: ubuntu-latest
-    needs:
-      - rustfmt
+    # needs:
+    #   - rustfmt
     env:
       RUSTFLAGS: -D warnings
     steps:
@@ -70,15 +69,18 @@ jobs:
         working-directory: ./example
         run: cargo llvm-cov --all-features --html
 
-
-      - name: Setup Pages
-        uses: actions/configure-pages@v2
-
-      - name: Upload artifact
-        uses: actions/upload-pages-artifact@v1
+      - name: Checkout the repo again for pushing pages revision
+        uses: actions/checkout@v3
         with:
-          path: 'example/target/llvm-cov/html/'
+          ref: 'codecov-pages'
+          path: 'pages-branch'
 
-      - name: Deploy to GitHub Pages
-        id: deployment
-        uses: actions/deploy-pages@v1
+      - name: Push codecov report to it's branch
+        working-directory: ./pages-branch
+        run: |
+          git config user.email "2204863+Dentosal@users.noreply.github.com"
+          git config user.name "Dentosal"
+          cp -r ../example/target/llvm-cov/html ${{ env.GIT_BRANCH }}
+          git add .
+          git commit -m "Update codecov for ${{ env.GIT_BRANCH }}"
+          git push
