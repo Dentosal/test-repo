@@ -75,7 +75,7 @@ jobs:
           ref: 'codecov-pages'
           path: 'pages-branch'
 
-      - name: Push codecov report to it's branch
+      - name: Push codecov report to pages branch
         working-directory: ./pages-branch
         run: |
           export BRANCH_B64=$(echo -n "${{ env.GIT_BRANCH }}" | basenc --base64url)
@@ -86,3 +86,7 @@ jobs:
           git add .
           git commit -m "Update codecov for ${{ env.GIT_BRANCH }}"
           git push
+          export PAGES_URL="https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/$BRANCH_B64/index.html"
+          echo "$PAGES_URL"
+          echo "Codecov report $PAGES_URL" >> $GITHUB_STEP_SUMMARY          
+
