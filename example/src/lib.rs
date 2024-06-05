@@ -6,6 +6,10 @@ pub fn mul(lhs: usize, rhs: usize) -> usize {
     lhs.checked_mul(rhs).unwrap()
 }
 
+pub fn pow(lhs: usize, rhs: usize) -> usize {
+    lhs.checked_pow(rhs as u32).unwrap()
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
