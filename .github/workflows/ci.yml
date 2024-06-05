@@ -78,9 +78,11 @@ jobs:
       - name: Push codecov report to it's branch
         working-directory: ./pages-branch
         run: |
+          export BRANCH_B64=$(echo -n "${{ env.GIT_BRANCH }}" | basenc --base64url)
           git config user.email "2204863+Dentosal@users.noreply.github.com"
           git config user.name "Dentosal"
-          cp -r ../example/target/llvm-cov/html ${{ env.GIT_BRANCH }}
+          cp -r ../example/target/llvm-cov/html "$BRANCH_B64"
+          python3 ../scripts/generate_index.py > index.html
           git add .
           git commit -m "Update codecov for ${{ env.GIT_BRANCH }}"
           git push
