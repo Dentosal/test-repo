@@ -1,0 +1,7 @@
+Example file for a check PR
+
+Line 3
+
+Line 5
+
+Last line
